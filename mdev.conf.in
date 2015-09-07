@@ -1,0 +1,41 @@
+-.* 0:0 660 *@LIBDIR@/lila-mdev/mdev-debug
+# load modules
+-$MODALIAS=.*       root:root       660 @modprobe "$MODALIAS"
+
+full                root:root       666
+fuse                root:root       666
+kmsg                root:root       644
+null                root:root       666
+random              root:root       666
+urandom             root:root       666
+zero                root:root       666
+
+mem                 root:kmem       640
+port                root:kmem       640
+
+console             root:tty        600
+ptmx                root:tty        666
+tty                 root:tty        666
+tty[0-9]+           root:tty        660
+ttyS[0-9]+          root:uucp       660
+vcsa{0,1}[0-9]*     root:tty        660
+
+dri/.*              root:video      660
+fb[0-9]+            root:video      660
+
+input/.*            root:input      660
+
+sd[a-z].*           root:disk       660 *@LIBDIR@/lila-mdev/mdev-disk
+
+dm-[0-9]+           root:disk       660 *@LIBDIR@/lila-mdev/mdev-dm
+
+loop-control        root:disk       660
+loop[0-9]+          root:disk       660 *@LIBDIR@/lila-mdev/mdev-disk
+loop[0-9]+p[0-9]+   root:disk       660 *@LIBDIR@/lila-mdev/mdev-disk
+
+sr[0-9]+            root:optical    660 @ln -sf "$MDEV" cdrom
+fd[0-9]+            root:floppy     660
+
+eth[0-9]+           root:root       640 @nameif
+
+SUBSYSTEM=sound;.*  root:audio      660

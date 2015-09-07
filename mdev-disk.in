@@ -1,0 +1,70 @@
+#!@BINDIR@/sh
+umask 022
+
+add()
+{
+    if [ -b /dev/"$MDEV" ]; then
+        disk=$(echo $MDEV | tr -d '[:digit:]')
+        if [ -r /sys/block/"$disk"/device/vpd_pg83 ]; then
+            [ -d /dev/disk/by-id ] || mkdir -p /dev/disk/by-id
+            [ -d /run/mdev/disk/by-id ] || mkdir -p /run/mdev/disk/by-id
+            [ $disk = "$MDEV" ] && part="" || part="-p"$(echo $MDEV | tr -d '[:alpha:]')
+            strings /sys/block/"$disk"/device/vpd_pg83 \
+                | @BINDIR@/sed -e 's/^[[:space:]]\+//g' -e 's/[[:space:]]\+$//g' \
+                -e 's/[[:space:]]\+/_/g' -e 's/^DATA_//g' \
+                | while read name; do
+                    ln -s ../../"$MDEV" /dev/disk/by-id/"$name$part"
+                    echo "$name$part" >> /run/mdev/disk/by-id/"$MDEV"
+            done
+        fi
+    fi
+
+    if [ -n "$MAJOR" ] && [ -n "$MINOR" ]; then
+        [ -d /dev/block ] || mkdir -p /dev/block
+        BLOCK="$MAJOR:$MINOR"
+        ln -s ../"$MDEV" /dev/block/"$BLOCK"
+        [ -d /run/mdev/disk/block ] || mkdir -p /run/mdev/disk/block
+        echo "$BLOCK" > /run/mdev/disk/block/"$MDEV"
+    fi
+
+    UUID=$(@BINDIR@/blkid -o value -s UUID /dev/"$MDEV")
+    if [ -n "$UUID" ]; then
+        [ -d /dev/disk/by-uuid ] || mkdir -p /dev/disk/by-uuid
+        ln -s ../../"$MDEV" /dev/disk/by-uuid/"$UUID"
+        [ -d /run/mdev/disk/by-uuid ] || mkdir -p /run/mdev/disk/by-uuid
+        echo "$UUID" > /run/mdev/disk/by-uuid/"$MDEV"
+    fi
+}
+
+remove()
+{
+    if [ -r /run/mdev/disk/by-id/"$MDEV" ]; then
+        while read name; do
+            [ -L /dev/disk/by-id/"$name" ] && rm /dev/disk/by-id/"$name"
+        done < /run/mdev/disk/by-id/"$MDEV"
+        rm /run/mdev/disk/by-id/"$MDEV"
+    fi
+
+    if [ -r /run/mdev/disk/block/"$MDEV" ]; then
+        BLOCK=$(cat /run/mdev/disk/block/"$MDEV")
+        [ -L /dev/block/"$BLOCK" ] && rm /dev/block/"$BLOCK"
+        rm /run/mdev/disk/block/"$MDEV"
+    fi
+
+    if [ -r /run/mdev/disk/by-uuid/"$MDEV" ]; then
+        UUID=$(cat /run/mdev/disk/by-uuid/"$MDEV")
+        [ -L /dev/disk/by-uuid/"$UUID" ] && rm /dev/disk/by-uuid/"$UUID"
+        rm /run/mdev/disk/by-uuid/"$MDEV"
+    fi
+}
+
+case "$ACTION" in
+    "add")
+        remove
+        add
+        ;;
+
+    "remove")
+        remove
+        ;;
+esac

@@ -1,0 +1,32 @@
+#!@BINDIR@/sh
+umask 022
+
+add()
+{
+    [ -r /sys/block/"$MDEV"/dm/name ] || return
+    name=$(cat /sys/block/"$MDEV"/dm/name)
+    [ -b /dev/mapper/"$name" ] && rm /dev/mapper/"$name"
+    ln -s ../"$MDEV" /dev/mapper/"$name"
+    [ -d /run/mdev/dm ] || mkdir -p /run/mdev/dm
+    echo "$name" > /run/mdev/dm/"$MDEV"
+}
+
+remove()
+{
+    [ -r /run/mdev/dm/"$MDEV" ] || return
+    name=$(cat /run/mdev/dm/"$MDEV")
+    [ -L /dev/mapper/"$name" ] && rm /dev/mapper/"$name"
+    rm /run/mdev/dm/"$MDEV"
+}
+
+case "$ACTION" in
+    "add")
+        remove
+        add
+        ;;
+
+    "remove")
+        remove
+        ;;
+esac
+exec /lib/lila-mdev/mdev-disk

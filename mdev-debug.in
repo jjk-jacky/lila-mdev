@@ -1,0 +1,5 @@
+#!@BINDIR@/sh
+exec >>/run/mdev.log 2>&1
+date
+env
+echo ---
