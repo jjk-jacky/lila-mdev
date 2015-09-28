@@ -34,6 +34,14 @@ add()
         [ -d /run/mdev/disk/by-uuid ] || mkdir -p /run/mdev/disk/by-uuid
         echo "$UUID" > /run/mdev/disk/by-uuid/"$MDEV"
     fi
+
+    LABEL=$(@BINDIR@/blkid -o value -s LABEL /dev/"$MDEV")
+    if [ -n "$LABEL" ]; then
+        [ -d /dev/disk/by-label ] || mkdir -p /dev/disk/by-label
+        ln -s ../../"$MDEV" /dev/disk/by-label/"$LABEL"
+        [ -d /run/mdev/disk/by-label ] || mkdir -p /run/mdev/disk/by-label
+        echo "$LABEL" > /run/mdev/disk/by-label/"$MDEV"
+    fi
 }
 
 remove()
@@ -55,6 +63,12 @@ remove()
         UUID=$(cat /run/mdev/disk/by-uuid/"$MDEV")
         [ -L /dev/disk/by-uuid/"$UUID" ] && rm /dev/disk/by-uuid/"$UUID"
         rm /run/mdev/disk/by-uuid/"$MDEV"
+    fi
+
+    if [ -r /run/mdev/disk/by-label/"$MDEV" ]; then
+        LABEL=$(cat /run/mdev/disk/by-label/"$MDEV")
+        [ -L /dev/disk/by-label/"$LABEL" ] && rm /dev/disk/by-label/"$LABEL"
+        rm /run/mdev/disk/by-label/"$MDEV"
     fi
 }
 
